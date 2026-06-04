@@ -19,9 +19,14 @@ MAX_TRADES_PER_DAY = 5
 trade_counter = {"count": 0, "date": datetime.utcnow().date()}
 
 # =========================
-# BOT INIT
+# APP INIT FUNCTION
 # =========================
-app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
+app = None  # Global app variable
+
+def build_app():
+    global app
+    app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
+    return app
 
 # =========================
 # START COMMAND
@@ -118,6 +123,9 @@ async def send_signal(query, context, sig):
 # RUN BOT
 # =========================
 def run_bot():
+    global app
+    if app is None:
+        build_app()
     print("🚀 Bot running...")
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(button_handler))
