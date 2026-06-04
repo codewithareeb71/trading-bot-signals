@@ -5,7 +5,7 @@ from .config import TELEGRAM_BOT_TOKEN
 from datetime import datetime
 
 # =========================
-# CURRENCY PAIRS (OANDA FORMAT FIX)
+# CURRENCY PAIRS
 # =========================
 CURRENCY_PAIRS = [
     "EUR_USD", "GBP_USD", "USD_JPY", "USD_CHF", "AUD_USD",
@@ -13,18 +13,18 @@ CURRENCY_PAIRS = [
 ]
 
 # =========================
-# DAILY LIMIT
+# DAILY TRADE LIMIT
 # =========================
 MAX_TRADES_PER_DAY = 5
 trade_counter = {"count": 0, "date": datetime.utcnow().date()}
 
 # =========================
-# APP INIT
+# BOT INIT
 # =========================
 app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
 
 # =========================
-# START (NO TEXT SPAM FIX)
+# START COMMAND
 # =========================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global trade_counter
@@ -37,8 +37,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(
         "👋 Trading Bot Ready\n\n"
-        "📌 Rules:\n"
-        f"• Max Trades/Day: {MAX_TRADES_PER_DAY}\n"
+        f"📌 Rules:\n• Max Trades/Day: {MAX_TRADES_PER_DAY}\n"
         "• Only high confidence signals\n"
         "• 2 min trade window\n\n"
         "👇 Click button to start",
@@ -46,32 +45,28 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 # =========================
-# BUTTON HANDLER (FIXED OLD CALLBACK BUG)
+# BUTTON HANDLER
 # =========================
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global trade_counter
-
     query = update.callback_query
     await query.answer()
 
-    # reset daily
+    # Reset daily
     if trade_counter["date"] != datetime.utcnow().date():
         trade_counter["count"] = 0
         trade_counter["date"] = datetime.utcnow().date()
 
+    # Daily limit check
     if trade_counter["count"] >= MAX_TRADES_PER_DAY:
         await query.message.reply_text("⚠️ Daily limit reached (5 trades)")
         return
 
     if query.data == "get_signal":
-
         best_signal = None
-
         for symbol in CURRENCY_PAIRS:
             sig = generate_signal(symbol)
-
             if sig and sig.direction in ["BUY", "SELL"]:
-
                 if not best_signal or sig.confidence > best_signal.confidence:
                     best_signal = sig
 
@@ -83,10 +78,9 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await send_signal(query, context, best_signal)
 
 # =========================
-# SEND SIGNAL (NO CONTEXT ERROR FIXED)
+# SEND SIGNAL
 # =========================
 async def send_signal(query, context, sig):
-
     image_path = "assets/buy.png" if sig.direction == "BUY" else "assets/sell.png"
 
     caption = (
@@ -117,7 +111,6 @@ async def send_signal(query, context, sig):
                 caption=caption,
                 reply_markup=keyboard
             )
-
     except Exception as e:
         await query.message.reply_text(f"⚠️ IMAGE ERROR: {str(e)}")
 
